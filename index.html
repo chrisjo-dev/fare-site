@@ -45,37 +45,28 @@
 .x-faq summary::after { content: "+"; position: absolute; right: 4px; top: 14px; font-size: 20px; font-weight: 400; color: var(--v6-ink-2); }
 .x-faq details[open] summary::after { content: "\2212"; }
 .x-faq p { padding: 0 0 16px; font-size: 14px; line-height: 1.7; color: var(--v6-ink-2); }
-/* 섹션 구분: 번호 라벨, 위 경계선, 한 칸 건너 짙은 띠(화면 끝까지) */
+/* 섹션 구분: 번호 라벨과 넉넉한 여백. 한 칸 건너 섹션은 화면 끝에 닿지 않는 둥근 판 위에 둔다(선은 긋지 않음) */
 .g-body { overflow-x: clip; }
 .x-sec, .x-form { position: relative; }
-.x-sec { padding-top: 72px; padding-bottom: 72px; }
-.x-sec::before, .x-form::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); border-top: 1px solid var(--v4-line); }
-.x-band::before { background: color-mix(in srgb, var(--sky-dusk-top) 62%, transparent); }
-.g-form.x-form { padding-top: 72px; padding-bottom: 72px; }
-.x-form + .x-sec, .x-sec + .x-sec { margin-top: 0; }
+.x-sec { padding-top: 64px; padding-bottom: 64px; }
+.g-form.x-form { padding-top: 64px; padding-bottom: 64px; }
+.x-band { margin-top: 24px; margin-bottom: 24px; padding-left: 28px; padding-right: 28px; }
+.x-band::before { content: ""; position: absolute; z-index: -1; inset: 0 8px; border-radius: 28px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sky-dusk-top) 70%, transparent), color-mix(in srgb, var(--sky-dusk-top) 45%, transparent));
+  box-shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.6); }
 .x-kicker { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--sky-gold); letter-spacing: 0.02em; }
 .x-kicker .num { display: inline-grid; place-items: center; min-width: 28px; height: 22px; padding: 0 6px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--sky-dusk-top); background: var(--sky-gold); }
 .x-sec .g-sec-title, .g-form.x-form .g-sec-title { margin-top: 10px; font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; }
-.x-sec + .r-notes, .x-sec ~ .r-notes { border-top: 1px solid var(--v4-line); }
 .g-form__lead { margin-top: 8px; font-size: 14px; color: var(--b-ink-2); }
 .x-preview .r-field dd { font-weight: 500; color: var(--v6-ink-2); }
-/* 모바일: 글은 20px 여백을 지키고, 그림과 카드 묶음은 화면 끝까지 쓴다 */
-@media (max-width: 767.98px) {
-  .v6-glass.x-slope { margin-left: -20px; margin-right: -20px; border-radius: 0; border-left: 0; border-right: 0; padding: 24px 20px; }
-  .x-grid { grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 20px;
-            margin-left: -20px; margin-right: -20px; padding: 0 20px 4px; scrollbar-width: none; }
-  .x-grid::-webkit-scrollbar { display: none; }
-  .x-grid li { scroll-snap-align: start; }
-  .x-two { margin-left: -20px; margin-right: -20px; gap: 0; }
-  .x-two .v6-glass.x-card { border-radius: 0; border-left: 0; border-right: 0; padding: 24px 20px; }
-  .x-two .x-card + .x-card { border-top: 0; }
-}
 @media (min-width: 768px) {
   .x-grid, .x-two { grid-template-columns: 1fr 1fr; }
 }
 @media (min-width: 1200px) {
-  .x-sec { width: min(1120px, calc(100% - 48px)); max-width: none; padding: 112px 0; }
-  .g-form.x-form { padding-top: 112px; padding-bottom: 112px; }
+  .x-sec { width: min(1120px, calc(100% - 48px)); max-width: none; padding: 96px 0; }
+  .g-form.x-form { padding-top: 96px; padding-bottom: 96px; }
+  .x-band { padding: 88px 0; margin-top: 40px; margin-bottom: 40px; }
+  .x-band::before { inset: 0 -48px; border-radius: 36px; }
   .x-sec .g-sec-title, .g-form.x-form .g-sec-title { font-size: 36px; line-height: 1.3; letter-spacing: -0.02em; }
   .x-lead { max-width: 720px; font-size: 17px; }
   .x-sec:first-of-type { display: grid; grid-template-columns: 1fr 1fr; column-gap: 64px; align-items: start; }
@@ -2856,7 +2847,6 @@ body.v6.v6--day { background: var(--fc-sky-light); color: var(--v6l-ink); }
 <section class="x-sec x-band" aria-labelledby="x-get">
   <p class="g-sec-kicker x-kicker"><span class="num">02</span>받는 것</p>
   <h2 class="g-sec-title" id="x-get">리포트에는 이게 들어가요</h2>
-  <p class="x-lead only-m">옆으로 넘겨 보세요.</p>
   <ul class="x-grid">
     <li class="v6-glass x-card"><b>총액 순위 3~5개</b><span>기간 안에서 가장 싼 일정부터. 도시, 날짜, 박 수까지.</span></li>
     <li class="v6-glass x-card"><b>일정마다 항공과 숙소 내역</b><span>항공사와 출발, 도착 시각. 숙소 이름과 평점, 전체 기간 금액.</span></li>
