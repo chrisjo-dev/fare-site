@@ -59,6 +59,17 @@
 .x-sec + .r-notes, .x-sec ~ .r-notes { border-top: 1px solid var(--v4-line); }
 .g-form__lead { margin-top: 8px; font-size: 14px; color: var(--b-ink-2); }
 .x-preview .r-field dd { font-weight: 500; color: var(--v6-ink-2); }
+/* 모바일: 글은 20px 여백을 지키고, 그림과 카드 묶음은 화면 끝까지 쓴다 */
+@media (max-width: 767.98px) {
+  .v6-glass.x-slope { margin-left: -20px; margin-right: -20px; border-radius: 0; border-left: 0; border-right: 0; padding: 24px 20px; }
+  .x-grid { grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 20px;
+            margin-left: -20px; margin-right: -20px; padding: 0 20px 4px; scrollbar-width: none; }
+  .x-grid::-webkit-scrollbar { display: none; }
+  .x-grid li { scroll-snap-align: start; }
+  .x-two { margin-left: -20px; margin-right: -20px; gap: 0; }
+  .x-two .v6-glass.x-card { border-radius: 0; border-left: 0; border-right: 0; padding: 24px 20px; }
+  .x-two .x-card + .x-card { border-top: 0; }
+}
 @media (min-width: 768px) {
   .x-grid, .x-two { grid-template-columns: 1fr 1fr; }
 }
@@ -2845,6 +2856,7 @@ body.v6.v6--day { background: var(--fc-sky-light); color: var(--v6l-ink); }
 <section class="x-sec x-band" aria-labelledby="x-get">
   <p class="g-sec-kicker x-kicker"><span class="num">02</span>받는 것</p>
   <h2 class="g-sec-title" id="x-get">리포트에는 이게 들어가요</h2>
+  <p class="x-lead only-m">옆으로 넘겨 보세요.</p>
   <ul class="x-grid">
     <li class="v6-glass x-card"><b>총액 순위 3~5개</b><span>기간 안에서 가장 싼 일정부터. 도시, 날짜, 박 수까지.</span></li>
     <li class="v6-glass x-card"><b>일정마다 항공과 숙소 내역</b><span>항공사와 출발, 도착 시각. 숙소 이름과 평점, 전체 기간 금액.</span></li>
