@@ -245,6 +245,42 @@
   .m .x-logo__m .b2 { animation-delay: 0.15s; } .m .x-logo__m .b3 { animation-delay: 0.35s; }
 }
 </style>
+<style>
+/* 날짜별 비교: 총액 순 / 항공권만 순 두 장을 옆으로 넘긴다(스크롤 스냅이라 손가락으로도 밀린다) */
+.x-tabs { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; border-bottom: 1px solid var(--v4-line); }
+.x-tab { position: relative; padding: 8px 0 10px; font-size: 14px; font-weight: 600; color: var(--v6-ink-2); text-decoration: none; }
+.x-tab.is-on { color: var(--v6-ink); }
+.x-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--sky-gold); scale: 0 1; transform-origin: left center; transition: scale 0.35s ease-out; }
+.x-tab.is-on::after { scale: 1 1; }
+.x-tabs__hint { margin-left: auto; font-size: 11px; color: var(--v6-ink-2); }
+.x-swipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none; }
+.x-swipe::-webkit-scrollbar { display: none; }
+.x-swipe > .x-panel { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+.x-panel#x-p-flight .v4-row__note { color: var(--sky-rose); }
+@media (prefers-reduced-motion: no-preference) {
+  .x-swipe > .x-panel { transition: opacity 0.4s ease-out; }
+  .x-swipe > .x-panel:not(.is-on) { opacity: 0.35; }
+}
+</style>
+<script>
+/* 탭을 누르거나 밀면 순위 기준이 바뀌고, 손대기 전까지는 6초마다 저절로 넘어간다 */
+addEventListener('DOMContentLoaded', function () {
+  var box = document.querySelector('.x-swipe'); if (!box) return;
+  var tabs = [].slice.call(document.querySelectorAll('.x-tab')), panels = [].slice.call(box.children), cur = 0, timer = null, touched = false;
+  function mark(i) {
+    cur = i;
+    tabs.forEach(function (t, k) { t.classList.toggle('is-on', k === i); t.setAttribute('aria-selected', k === i); });
+    panels.forEach(function (p, k) { p.classList.toggle('is-on', k === i); });
+  }
+  function go(i) { box.scrollTo({ left: panels[i].offsetLeft - box.offsetLeft, behavior: 'smooth' }); mark(i); }
+  tabs.forEach(function (t, i) { t.addEventListener('click', function (e) { e.preventDefault(); touched = true; go(i); }); });
+  box.addEventListener('scroll', function () { var i = Math.round(box.scrollLeft / box.clientWidth); if (i !== cur) mark(i); }, { passive: true });
+  ['pointerdown', 'touchstart', 'wheel'].forEach(function (ev) { box.addEventListener(ev, function () { touched = true; }, { passive: true }); });
+  mark(0);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  setTimeout(function loop() { if (!touched) { go((cur + 1) % panels.length); setTimeout(loop, 6000); } }, 6500);
+});
+</script>
 <style>@font-face {
 	font-family: 'Pretendard Variable';
 	font-style: normal;
@@ -2931,15 +2967,26 @@ body.v6.v6--day { background: var(--fc-sky-light); color: var(--v6l-ink); }
         </div>
         <div class="g-pv__tl v4-timeline">
           <p class="g-pv__tl-h">날짜별 비교<span><span class="num">13</span>개 일정 중 위 <span class="num">3</span>개</span></p>
+          <div class="x-tabs" role="tablist"><a class="x-tab is-on" href="#x-p-total" role="tab" aria-selected="true">총액 순</a><a class="x-tab" href="#x-p-flight" role="tab" aria-selected="false">항공권만 순</a><span class="x-tabs__hint">옆으로 밀어 보세요</span></div>
           <div class="v4-axis"><span><b class="num">11/4</b> 수</span><span><b class="num">11/5</b> 목</span><span><b class="num">11/6</b> 금</span><span><b class="num">11/7</b> 토</span><span><b class="num">11/8</b> 일</span></div>
-          <ol class="v4-rows">
-            <li class="v4-row g-row is-top"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-sapporo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">삿포로 CTS</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">407,082<small>원</small></span></div><div class="v4-row__sub">2박, 파라타항공<span class="v4-tag">추천</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:10.625%;width:41.111%"></i><i class="v4-track__fl" style="left:8.403%;width:2.222%"></i><i class="v4-track__fl" style="left:51.736%;width:2.847%"></i><span class="v4-track__label" style="left:31.181%">49시간</span></div></li>
+          <div class="x-swipe" tabindex="0" aria-label="옆으로 밀어 순위 기준 바꾸기">
+            <ol class="v4-rows x-panel" id="x-p-total" aria-label="총액 순">
+              <li class="v4-row g-row is-top"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-sapporo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">삿포로 CTS</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">407,082<small>원</small></span></div><div class="v4-row__sub">2박, 파라타항공<span class="v4-tag">추천</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:10.625%;width:41.111%"></i><i class="v4-track__fl" style="left:8.403%;width:2.222%"></i><i class="v4-track__fl" style="left:51.736%;width:2.847%"></i><span class="v4-track__label" style="left:31.181%">49시간</span></div></li>
 
-            <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-osaka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">오사카 KIX</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">413,317<small>원</small></span></div><div class="v4-row__sub">2박, 이스타항공 + 진에어<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.167%;width:38.194%"></i><i class="v4-track__fl" style="left:12.569%;width:1.597%"></i><i class="v4-track__fl" style="left:52.361%;width:1.667%"></i><span class="v4-track__label" style="left:33.264%">46시간</span></div></li>
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-osaka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">오사카 KIX</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">413,317<small>원</small></span></div><div class="v4-row__sub">2박, 이스타항공 + 진에어<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.167%;width:38.194%"></i><i class="v4-track__fl" style="left:12.569%;width:1.597%"></i><i class="v4-track__fl" style="left:52.361%;width:1.667%"></i><span class="v4-track__label" style="left:33.264%">46시간</span></div></li>
 
-            <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">3</span><img class="v7-lm" src="/static/img/landmark-nagoya.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">나고야 NGO</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">432,306<small>원</small></span></div><div class="v4-row__sub">2박, 제주항공 + 대한항공<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.028%;width:33.472%"></i><i class="v4-track__fl" style="left:12.361%;width:1.667%"></i><i class="v4-track__fl" style="left:47.5%;width:1.736%"></i><span class="v4-track__label" style="left:30.764%">40시간</span></div></li>
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">3</span><img class="v7-lm" src="/static/img/landmark-nagoya.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">나고야 NGO</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">432,306<small>원</small></span></div><div class="v4-row__sub">2박, 제주항공 + 대한항공<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.028%;width:33.472%"></i><i class="v4-track__fl" style="left:12.361%;width:1.667%"></i><i class="v4-track__fl" style="left:47.5%;width:1.736%"></i><span class="v4-track__label" style="left:30.764%">40시간</span></div></li>
 
-          </ol>
+            </ol>
+            <ol class="v4-rows x-panel" id="x-p-flight" aria-label="항공권만 순">
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-tokyo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">도쿄 NRT</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">224,837<small>원</small></span></div><div class="v4-row__sub">2박, 에티오피아항공<span class="v4-row__note is-risk">총액 4위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:16.111%;width:40.972%"></i><i class="v4-track__fl" style="left:14.028%;width:2.083%"></i><i class="v4-track__fl" style="left:57.083%;width:2.083%"></i><span class="v4-track__label" style="left:36.597%">49시간</span></div></li>
+
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-fukuoka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">후쿠오카 FUK</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">258,000<small>원</small></span></div><div class="v4-row__sub">2박, 진에어<span class="v4-row__note is-risk">총액 5위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:15.694%;width:32.222%"></i><i class="v4-track__fl" style="left:14.514%;width:1.181%"></i><i class="v4-track__fl" style="left:47.917%;width:1.25%"></i><span class="v4-track__label" style="left:31.806%">39시간</span></div></li>
+
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">3</span><img class="v7-lm" src="/static/img/landmark-osaka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">오사카 KIX</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">285,207<small>원</small></span></div><div class="v4-row__sub">2박, 이스타항공 + 진에어<span class="v4-row__note is-risk">총액 2위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.167%;width:38.194%"></i><i class="v4-track__fl" style="left:12.569%;width:1.597%"></i><i class="v4-track__fl" style="left:52.361%;width:1.667%"></i><span class="v4-track__label" style="left:33.264%">46시간</span></div></li>
+
+            </ol>
+          </div>
         </div>
         <p class="g-pv__foot">항공권만 보면 도쿄가 가장 싸지만, 숙소까지 더하면 <span class="num">4</span>위예요. 메일에서는 일정마다 항공과 숙소 예약 링크를 붙여 드려요.</p>
       </section>
