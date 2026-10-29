@@ -246,39 +246,58 @@
 }
 </style>
 <style>
-/* 날짜별 비교: 총액 순 / 항공권만 순 두 장을 옆으로 넘긴다(스크롤 스냅이라 손가락으로도 밀린다) */
-.x-tabs { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; border-bottom: 1px solid var(--v4-line); }
-.x-tab { position: relative; padding: 8px 0 10px; font-size: 14px; font-weight: 600; color: var(--v6-ink-2); text-decoration: none; }
-.x-tab.is-on { color: var(--v6-ink); }
-.x-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--sky-gold); scale: 0 1; transform-origin: left center; transition: scale 0.35s ease-out; }
-.x-tab.is-on::after { scale: 1 1; }
-.x-tabs__hint { margin-left: auto; font-size: 11px; color: var(--v6-ink-2); }
-.x-swipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none; }
-.x-swipe::-webkit-scrollbar { display: none; }
-.x-swipe > .x-panel { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
-.x-panel#x-p-flight .v4-row__note { color: var(--sky-rose); }
+/* 날짜별 비교: 출발일(11/4, 11/5, 11/6)을 저절로 돌며 그날 떠나는 일정과 1위와의 차이를 보여 준다. 11/7, 11/8은 돌아오는 날이라 고를 수 없음 */
+.x-days .x-day { display: flex; align-items: center; gap: 4px; appearance: none; border: 0; background: none; height: 100%; padding: 0 0 0 6px; text-align: left; white-space: nowrap; font: inherit; color: inherit; cursor: pointer; position: relative; opacity: 0.55; transition: opacity 0.3s; }
+.x-days .x-day.is-off { cursor: default; opacity: 0.3; }
+.x-days .x-day.is-on { opacity: 1; color: var(--sky-gold); }
+.x-days .x-day.is-on .num { color: var(--sky-gold); }
+.x-days .x-day::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--sky-gold); scale: 0 1; transform-origin: left center; }
+.x-days .x-day.is-on::after { scale: 1 1; transition: scale 0.4s ease-out; }
+.x-days .x-day.is-on.is-run::after { transition: scale var(--t, 5s) linear; }
+.x-swipe { display: grid; }
+.x-swipe > .x-panel { grid-area: 1 / 1; min-width: 0; position: relative; visibility: hidden; opacity: 0; }
+.x-swipe > .x-panel.is-on { visibility: visible; opacity: 1; }
+.x-panel .v4-rows::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--d) * 20%); width: 20%; border-radius: 8px; background: color-mix(in srgb, var(--sky-gold) 9%, transparent); pointer-events: none; }
+.x-day-sum { margin-top: 12px; font-size: 13px; line-height: 1.6; color: var(--v6-ink-2); }
+.x-day-sum b { color: var(--v6-ink); font-weight: 700; }
+.x-panel:not(:first-child) .x-day-sum b { color: var(--sky-rose); }
 @media (prefers-reduced-motion: no-preference) {
-  .x-swipe > .x-panel { transition: opacity 0.4s ease-out; }
-  .x-swipe > .x-panel:not(.is-on) { opacity: 0.35; }
+  .m .x-swipe > .x-panel.is-on { animation: m-swipe 0.5s cubic-bezier(.2,.7,.2,1) both; }
+  .m .x-swipe > .x-panel.is-on .g-row { animation: m-rise 0.45s ease-out both; }
+  .m .x-swipe > .x-panel.is-on .g-row:nth-child(2) { animation-delay: 0.08s; } .m .x-swipe > .x-panel.is-on .g-row:nth-child(3) { animation-delay: 0.16s; }
+  @keyframes m-swipe { from { opacity: 0; translate: 32px 0; } to { opacity: 1; translate: none; } }
 }
 </style>
 <script>
-/* 탭을 누르거나 밀면 순위 기준이 바뀌고, 손대기 전까지는 6초마다 저절로 넘어간다 */
+/* 출발일을 5초마다 다음으로. 날짜를 누르면 그 날로 가고 저절로 돌기는 멈춘다. 차이 금액은 0부터 올라간다 */
 addEventListener('DOMContentLoaded', function () {
-  var box = document.querySelector('.x-swipe'); if (!box) return;
-  var tabs = [].slice.call(document.querySelectorAll('.x-tab')), panels = [].slice.call(box.children), cur = 0, timer = null, touched = false;
-  function mark(i) {
-    cur = i;
-    tabs.forEach(function (t, k) { t.classList.toggle('is-on', k === i); t.setAttribute('aria-selected', k === i); });
-    panels.forEach(function (p, k) { p.classList.toggle('is-on', k === i); });
+  var days = [].slice.call(document.querySelectorAll('.x-day[data-d]')), panels = [].slice.call(document.querySelectorAll('.x-swipe > .x-panel'));
+  var cnt = document.querySelector('.x-day-cnt'); if (!days.length || !cnt) return;
+  var N = [['11/4', 10, 3], ['11/5', 2, 2], ['11/6', 1, 1]], cur = 0, stop = false, T = 5000;
+  var motion = document.documentElement.classList.contains('m');
+  function up(el) {
+    var to = +el.getAttribute('data-diff'), t0 = performance.now();
+    (function step(t) { var k = Math.min(1, (t - t0) / 800); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))).toLocaleString('ko-KR'); if (k < 1) requestAnimationFrame(step); })(t0);
   }
-  function go(i) { box.scrollTo({ left: panels[i].offsetLeft - box.offsetLeft, behavior: 'smooth' }); mark(i); }
-  tabs.forEach(function (t, i) { t.addEventListener('click', function (e) { e.preventDefault(); touched = true; go(i); }); });
-  box.addEventListener('scroll', function () { var i = Math.round(box.scrollLeft / box.clientWidth); if (i !== cur) mark(i); }, { passive: true });
-  ['pointerdown', 'touchstart', 'wheel'].forEach(function (ev) { box.addEventListener(ev, function () { touched = true; }, { passive: true }); });
-  mark(0);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  setTimeout(function loop() { if (!touched) { go((cur + 1) % panels.length); setTimeout(loop, 6000); } }, 6500);
+  function show(i) {
+    cur = i;
+    days.forEach(function (d, k) { d.classList.toggle('is-on', k === i); d.classList.remove('is-run'); d.setAttribute('aria-selected', k === i); });
+    panels.forEach(function (p, k) { p.classList.toggle('is-on', k === i); });
+    var n = N[i];
+    cnt.innerHTML = '<span class="num">' + n[0] + '</span> 출발 <span class="num">' + n[1] + '</span>개' + (n[1] > n[2] ? ' 중 위 <span class="num">' + n[2] + '</span>개' : '');
+    if (motion) {
+      var dd = panels[i].querySelector('[data-diff]'); if (dd) up(dd);
+      if (!stop) { void days[i].offsetWidth; days[i].style.setProperty('--t', (T / 1000) + 's'); days[i].classList.add('is-run'); }
+    }
+  }
+  days.forEach(function (d, i) { d.addEventListener('click', function () { stop = true; show(i); }); });
+  if (!motion) return;
+  var started = false;
+  new IntersectionObserver(function (es, io) {
+    if (!es[0].isIntersecting || started) return;
+    started = true; io.disconnect(); show(0);
+    (function loop() { setTimeout(function () { if (stop) return; show((cur + 1) % days.length); loop(); }, T); })();
+  }, { threshold: 0.4 }).observe(document.querySelector('.x-swipe'));
 });
 </script>
 <style>@font-face {
@@ -2966,26 +2985,36 @@ body.v6.v6--day { background: var(--fc-sky-light); color: var(--v6l-ink); }
           <p class="rpt__card-sub">항공 <span class="num" data-count="291100" data-delay="300">291,100</span> + 숙소 <span class="num" data-count="115982" data-delay="700">115,982</span></p>
         </div>
         <div class="g-pv__tl v4-timeline">
-          <p class="g-pv__tl-h">날짜별 비교<span><span class="num">13</span>개 일정 중 위 <span class="num">3</span>개</span></p>
-          <div class="x-tabs" role="tablist"><a class="x-tab is-on" href="#x-p-total" role="tab" aria-selected="true">총액 순</a><a class="x-tab" href="#x-p-flight" role="tab" aria-selected="false">항공권만 순</a><span class="x-tabs__hint">옆으로 밀어 보세요</span></div>
-          <div class="v4-axis"><span><b class="num">11/4</b> 수</span><span><b class="num">11/5</b> 목</span><span><b class="num">11/6</b> 금</span><span><b class="num">11/7</b> 토</span><span><b class="num">11/8</b> 일</span></div>
-          <div class="x-swipe" tabindex="0" aria-label="옆으로 밀어 순위 기준 바꾸기">
-            <ol class="v4-rows x-panel" id="x-p-total" aria-label="총액 순">
+          <p class="g-pv__tl-h">날짜별 비교<span class="x-day-cnt"><span class="num">11/4</span> 출발 <span class="num">10</span>개 중 위 <span class="num">3</span>개</span></p>
+          <div class="v4-axis x-days" role="tablist" aria-label="출발일"><button type="button" class="x-day is-on" data-d="0" role="tab"><b class="num">11/4</b> 수</button><button type="button" class="x-day" data-d="1" role="tab"><b class="num">11/5</b> 목</button><button type="button" class="x-day" data-d="2" role="tab"><b class="num">11/6</b> 금</button><span class="x-day is-off"><b class="num">11/7</b> 토</span><span class="x-day is-off"><b class="num">11/8</b> 일</span></div>
+          <div class="x-swipe" aria-live="polite">
+            <div class="x-panel is-on" style="--d: 0">
+              <ol class="v4-rows">
               <li class="v4-row g-row is-top"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-sapporo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">삿포로 CTS</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">407,082<small>원</small></span></div><div class="v4-row__sub">2박, 파라타항공<span class="v4-tag">추천</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:10.625%;width:41.111%"></i><i class="v4-track__fl" style="left:8.403%;width:2.222%"></i><i class="v4-track__fl" style="left:51.736%;width:2.847%"></i><span class="v4-track__label" style="left:31.181%">49시간</span></div></li>
 
               <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-osaka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">오사카 KIX</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">413,317<small>원</small></span></div><div class="v4-row__sub">2박, 이스타항공 + 진에어<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.167%;width:38.194%"></i><i class="v4-track__fl" style="left:12.569%;width:1.597%"></i><i class="v4-track__fl" style="left:52.361%;width:1.667%"></i><span class="v4-track__label" style="left:33.264%">46시간</span></div></li>
 
               <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">3</span><img class="v7-lm" src="/static/img/landmark-nagoya.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">나고야 NGO</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">432,306<small>원</small></span></div><div class="v4-row__sub">2박, 제주항공 + 대한항공<span class="v4-row__note is-risk">따로 발권</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.028%;width:33.472%"></i><i class="v4-track__fl" style="left:12.361%;width:1.667%"></i><i class="v4-track__fl" style="left:47.5%;width:1.736%"></i><span class="v4-track__label" style="left:30.764%">40시간</span></div></li>
 
-            </ol>
-            <ol class="v4-rows x-panel" id="x-p-flight" aria-label="항공권만 순">
-              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-tokyo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">도쿄 NRT</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">224,837<small>원</small></span></div><div class="v4-row__sub">2박, 에티오피아항공<span class="v4-row__note is-risk">총액 4위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:16.111%;width:40.972%"></i><i class="v4-track__fl" style="left:14.028%;width:2.083%"></i><i class="v4-track__fl" style="left:57.083%;width:2.083%"></i><span class="v4-track__label" style="left:36.597%">49시간</span></div></li>
+              </ol>
+              <p class="x-day-sum">11/4에 떠나면 <b>삿포로 <span class="num">407,082</span>원</b>, 13개 일정 중 가장 싸요.</p>
+            </div>
+            <div class="x-panel" style="--d: 1">
+              <ol class="v4-rows">
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-fukuoka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">후쿠오카 FUK</span><span class="v4-row__date num">11/5~11/7</span></div><span class="v4-row__total num">595,838<small>원</small></span></div><div class="v4-row__sub">2박, 진에어<span class="v4-row__note is-risk"></span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:35.694%;width:32.222%"></i><i class="v4-track__fl" style="left:34.514%;width:1.181%"></i><i class="v4-track__fl" style="left:67.917%;width:1.25%"></i><span class="v4-track__label" style="left:51.806%">39시간</span></div></li>
 
-              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-fukuoka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">후쿠오카 FUK</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">258,000<small>원</small></span></div><div class="v4-row__sub">2박, 진에어<span class="v4-row__note is-risk">총액 5위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:15.694%;width:32.222%"></i><i class="v4-track__fl" style="left:14.514%;width:1.181%"></i><i class="v4-track__fl" style="left:47.917%;width:1.25%"></i><span class="v4-track__label" style="left:31.806%">39시간</span></div></li>
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">2</span><img class="v7-lm" src="/static/img/landmark-tokyo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">도쿄 HND</span><span class="v4-row__date num">11/5~11/8</span></div><span class="v4-row__total num">1,055,438<small>원</small></span></div><div class="v4-row__sub">3박, 피치항공<span class="v4-row__note is-risk">심야편</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:40.764%;width:40.833%"></i><i class="v4-track__fl" style="left:39.028%;width:1.736%"></i><i class="v4-track__fl" style="left:81.597%;width:2.292%"></i><span class="v4-track__label" style="left:61.181%">49시간</span></div></li>
 
-              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">3</span><img class="v7-lm" src="/static/img/landmark-osaka.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">오사카 KIX</span><span class="v4-row__date num">11/4~11/6</span></div><span class="v4-row__total num">285,207<small>원</small></span></div><div class="v4-row__sub">2박, 이스타항공 + 진에어<span class="v4-row__note is-risk">총액 2위</span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:14.167%;width:38.194%"></i><i class="v4-track__fl" style="left:12.569%;width:1.597%"></i><i class="v4-track__fl" style="left:52.361%;width:1.667%"></i><span class="v4-track__label" style="left:33.264%">46시간</span></div></li>
+              </ol>
+              <p class="x-day-sum">하루 늦게 11/5에 떠나면 1위가 <span class="num">595,838</span>원, 11/4보다 <b><span class="num" data-diff="188756">188,756</span>원 더</b> 들어요.</p>
+            </div>
+            <div class="x-panel" style="--d: 2">
+              <ol class="v4-rows">
+              <li class="v4-row g-row"><div class="v4-row__l1"><div><span class="v4-row__rank num">1</span><img class="v7-lm" src="/static/img/landmark-tokyo.webp" alt="" width="30" height="30" loading="lazy"><span class="v4-row__city">도쿄 NRT</span><span class="v4-row__date num">11/6~11/8</span></div><span class="v4-row__total num">657,828<small>원</small></span></div><div class="v4-row__sub">2박, 에티오피아항공<span class="v4-row__note is-risk"></span></div><div class="v4-track" aria-hidden="true"><i class="v4-track__stay" style="left:56.111%;width:40.972%"></i><i class="v4-track__fl" style="left:54.028%;width:2.083%"></i><i class="v4-track__fl" style="left:97.083%;width:2.083%"></i><span class="v4-track__label" style="left:76.597%">49시간</span></div></li>
 
-            </ol>
+              </ol>
+              <p class="x-day-sum">11/6에 떠나면 도쿄뿐이고 <span class="num">657,828</span>원, 11/4보다 <b><span class="num" data-diff="250746">250,746</span>원 더</b> 들어요.</p>
+            </div>
           </div>
         </div>
         <p class="g-pv__foot">항공권만 보면 도쿄가 가장 싸지만, 숙소까지 더하면 <span class="num">4</span>위예요. 메일에서는 일정마다 항공과 숙소 예약 링크를 붙여 드려요.</p>
